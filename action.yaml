@@ -137,8 +137,14 @@ runs:
       run: |
         ERROR_LINES=$(grep "^ERROR:" "${LOG_FILE}")
 
+        echo "Found $(echo "${ERROR_LINES}" | wc -l) error logs" >> "${GITHUB_STEP_SUMMARY}"
+
         if [[ -n "${ERROR_LINES}" ]]; then
+            echo "Found error logs in the output" >> "${GITHUB_STEP_SUMMARY}"
+
             if [[ -n "${IGNORE_PATTERN}" ]]; then
+                echo -e "Ignoring error logs matching: \`${IGNORE_PATTERN}\`" >> "${GITHUB_STEP_SUMMARY}"
+
                 ERROR_LINES=$(echo "${ERROR_LINES}" | grep -vE "${IGNORE_PATTERN}")
             fi
 
@@ -149,5 +155,7 @@ runs:
 
                 echo "::error ::Home Assistant Configuration Check failed. See step summary for log output."
                 exit 1
+            else
+                echo "All error logs were ignored" >> "${GITHUB_STEP_SUMMARY}"
             fi
         fi

@@ -135,19 +135,19 @@ runs:
         IGNORE_PATTERN: ${{ inputs.ignore_error_log_pattern }}
         LOG_FILE: "${{ github.workspace }}/configuration_check.log"
       run: |
-        if grep -q "^ERROR:" "${LOG_FILE}"; then
-          ERROR_LINES=$(grep "^ERROR:" "${LOG_FILE}")
-          
-          if [[ -n "${IGNORE_PATTERN}" ]]; then
-            ERROR_LINES=$(echo "${ERROR_LINES}" | grep -vP "${IGNORE_PATTERN}")
-          fi
+        ERROR_LINES=$(grep "^ERROR:" "${LOG_FILE}")
 
-          if [[ -n "${ERROR_LINES}" ]]; then
-            echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
-            echo "${ERROR_LINES}" >> "${GITHUB_STEP_SUMMARY}"
-            echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+        if [[ -n "${ERROR_LINES}" ]]; then
+            if [[ -n "${IGNORE_PATTERN}" ]]; then
+                ERROR_LINES=$(echo "${ERROR_LINES}" | grep -vE "${IGNORE_PATTERN}")
+            fi
 
-            echo "::error ::Home Assistant Configuration Check failed"
-            exit 1
-          fi
+            if [[ -n "${ERROR_LINES}" ]]; then
+                echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+                echo "${ERROR_LINES}" >> "${GITHUB_STEP_SUMMARY}"
+                echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
+
+                echo "::error ::Home Assistant Configuration Check failed. See step summary for log output."
+                exit 1
+            fi
         fi

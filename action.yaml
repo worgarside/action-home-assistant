@@ -127,6 +127,8 @@ runs:
     - name: 🥅 Catch Error Logs
       shell: bash
       if: ${{ inputs.catch_error_logs != 'false' }}
+      env:
+        LOG_FILE: "${{ github.workspace }}/configuration_check.log"
       run: |
         if grep -q "^ERROR:" "${LOG_FILE}"; then
           echo -e "\`\`\`\n" >> "${GITHUB_STEP_SUMMARY}"

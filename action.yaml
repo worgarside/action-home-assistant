@@ -103,7 +103,8 @@ runs:
 
     - name: 🚀 Run Home Assistant Configuration Check
       shell: bash
-      # yamllint disable rule:line-length
+      env:
+        LOG_FILE: "${{ github.workspace }}/configuration_check.log"
       run: |
         docker run --rm \
           --entrypoint "" \
@@ -121,14 +122,16 @@ runs:
           "ghcr.io/home-assistant/home-assistant:${{ steps.version.outputs.version }}" \
             python -m homeassistant \
               --config "${{ steps.check.outputs.path }}" \
-              --script check_config > "${{ github.workspace }}/configuration_check.log" 2>&1
+              --script check_config | tee "${LOG_FILE}"
 
     - name: 🥅 Catch Error Logs
       shell: bash
       if: ${{ inputs.catch_error_logs != 'false' }}
       run: |
-        if grep -q "^ERROR:" "${{ github.workspace }}/configuration_check.log"; then
-          cat "${{ github.workspace }}/configuration_check.log" > "${GITHUB_STEP_SUMMARY}"
+        if grep -q "^ERROR:" "${LOG_FILE}"; then
+          echo -e "\`\`\`\n" >> "${GITHUB_STEP_SUMMARY}"
+          cat "${LOG_FILE}" >> "${GITHUB_STEP_SUMMARY}"
+          echo -e "\n\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
 
           echo "::error ::Home Assistant Configuration Check failed"
           exit 1

@@ -152,9 +152,10 @@ runs:
             print(f"Found {len(error_lines)} error logs in the output")
 
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fout:
-                fout.write("## Error Logs\n")
-                fout.write("```\n")
+                fout.write("## Error Logs\n```\n")
                 fout.writelines(error_lines)
+                fout.write("```\n\n## Ignore Pattern:\n```\n")
+                fout.write(ignore_pattern.pattern)
                 fout.write("\n```")
 
             print("::error ::Home Assistant Configuration Check failed. See step summary for log output.")

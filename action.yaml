@@ -112,6 +112,7 @@ runs:
       shell: bash
       env:
         LOG_FILE: "${{ github.workspace }}/configuration_check.log"
+      # yamllint disable rule:line-length
       run: |
         docker run --rm \
           --entrypoint "" \
@@ -130,6 +131,7 @@ runs:
             python -m homeassistant \
               --config "${{ steps.check.outputs.path }}" \
               --script check_config | tee "${LOG_FILE}"
+      # yamllint enable rule:line-length
 
     - name: 🥅 Catch Error Logs
       shell: python
@@ -149,7 +151,7 @@ runs:
                 line
                 for line in fin
                 if (
-                    line.startswith("ERROR:") and 
+                    line.startswith("ERROR:") and
                     not ignore_pattern.search(line)
                 )
             ]

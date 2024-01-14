@@ -129,35 +129,33 @@ runs:
               --script check_config | tee "${LOG_FILE}"
 
     - name: 🥅 Catch Error Logs
-      shell: bash
+      shell: python
       if: ${{ inputs.catch_error_logs != 'false' }}
       env:
         IGNORE_PATTERN: ${{ inputs.ignore_error_log_pattern }}
         LOG_FILE: "${{ github.workspace }}/configuration_check.log"
       run: |
-        ERROR_LINES=$(grep "^ERROR:" "${LOG_FILE}")
+        import os
+        import re
+        import sys
 
-        echo "Found $(echo "${ERROR_LINES}" | wc -l) error logs" >> "${GITHUB_STEP_SUMMARY}"
+        ignore_pattern = re.compile(os.environ["IGNORE_PATTERN"])
 
-        if [[ -n "${ERROR_LINES}" ]]; then
-            echo "Found error logs in the output" >> "${GITHUB_STEP_SUMMARY}"
+        with open(os.environ["LOG_FILE"], "r") as fin:
+            error_lines = [
+                line
+                for line in fin
+                if line.startswith("ERROR:") and not ignore_pattern.search(line)
+            ]
 
-            if [[ -n "${IGNORE_PATTERN}" ]]; then
-                echo -e "Ignoring error logs matching: \`${IGNORE_PATTERN}\`" >> "${GITHUB_STEP_SUMMARY}"
+        if error_lines:
+            print(f"Found {len(error_lines)} error logs in the output")
 
-                ERROR_LINES=$(echo "${ERROR_LINES}" | grep -vE "${IGNORE_PATTERN}")
-            fi
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fout:
+                fout.write("## Error Logs\n")
+                fout.write("```\n")
+                fout.writelines(error_lines)
+                fout.write("\n```")
 
-            echo "Found $(echo "${ERROR_LINES}" | wc -l) error logs after ignoring" >> "${GITHUB_STEP_SUMMARY}"
-
-            if [[ -n "${ERROR_LINES}" ]]; then
-                echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
-                echo "${ERROR_LINES}" >> "${GITHUB_STEP_SUMMARY}"
-                echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
-
-                echo "::error ::Home Assistant Configuration Check failed. See step summary for log output."
-                exit 1
-            else
-                echo "All error logs were ignored" >> "${GITHUB_STEP_SUMMARY}"
-            fi
-        fi
+            print("::error ::Home Assistant Configuration Check failed. See step summary for log output.")
+            sys.exit(1)

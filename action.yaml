@@ -148,6 +148,8 @@ runs:
                 ERROR_LINES=$(echo "${ERROR_LINES}" | grep -vE "${IGNORE_PATTERN}")
             fi
 
+            echo "Found $(echo "${ERROR_LINES}" | wc -l) error logs after ignoring" >> "${GITHUB_STEP_SUMMARY}"
+
             if [[ -n "${ERROR_LINES}" ]]; then
                 echo -e "\`\`\`" >> "${GITHUB_STEP_SUMMARY}"
                 echo "${ERROR_LINES}" >> "${GITHUB_STEP_SUMMARY}"

@@ -21,6 +21,17 @@ inputs:
   env_file:
     description: Possible path to environment file to use
     required: false
+  catch_error_logs:
+    description: >-
+      Catch error logs and fail the action if found. Defaults to false.
+    required: false
+    default: "false"
+  ignore_error_log_pattern:
+    description: >-
+      Any error logs matching this regex pattern will be ignored.
+      Defaults to empty.
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -99,6 +110,8 @@ runs:
 
     - name: 🚀 Run Home Assistant Configuration Check
       shell: bash
+      env:
+        LOG_FILE: "${{ github.workspace }}/configuration_check.log"
       # yamllint disable rule:line-length
       run: |
         docker run --rm \
@@ -117,4 +130,44 @@ runs:
           "ghcr.io/home-assistant/home-assistant:${{ steps.version.outputs.version }}" \
             python -m homeassistant \
               --config "${{ steps.check.outputs.path }}" \
-              --script check_config
+              --script check_config | tee "${LOG_FILE}"
+      # yamllint enable rule:line-length
+
+    - name: 🥅 Catch Error Logs
+      shell: python
+      if: ${{ inputs.catch_error_logs != 'false' }}
+      env:
+        IGNORE_PATTERN: ${{ inputs.ignore_error_log_pattern }}
+        LOG_FILE: "${{ github.workspace }}/configuration_check.log"
+      run: |
+        import os
+        import re
+        import sys
+
+        ignore_pattern = re.compile(os.environ["IGNORE_PATTERN"])
+
+        with open(os.environ["LOG_FILE"], "r") as fin:
+            error_lines = [
+                line
+                for line in fin
+                if (
+                    line.startswith("ERROR:") and
+                    not ignore_pattern.search(line)
+                )
+            ]
+
+        if error_lines:
+            print(f"Found {len(error_lines)} error logs in the output")
+
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fout:
+                fout.write("## Error Logs\n```\n")
+                fout.writelines(error_lines)
+                fout.write("```\n\n## Ignore Pattern\n```\n")
+                fout.write(ignore_pattern.pattern)
+                fout.write("\n```")
+
+            print(
+                "::error ::Home Assistant Configuration Check failed. See "
+                "step summary for log output."
+            )
+            sys.exit(1)

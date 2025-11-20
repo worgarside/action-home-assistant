@@ -129,12 +129,15 @@ runs:
         else
           config_path="/github/workspace/${config_path#./}"
         fi
-        
+        # Remove trailing slash if present
+        config_path="${config_path%/}"
+
         docker run --rm \
           --entrypoint "" \
           -v $(pwd):/github/workspace \
           $env_file_arg \
           --workdir /github/workspace \
+          -e HASS_CONFIG="${config_path}" \
           "ghcr.io/home-assistant/home-assistant:${{ steps.version.outputs.version }}" \
             python -m homeassistant \
               --config "${config_path}" \

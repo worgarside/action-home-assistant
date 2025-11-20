@@ -122,14 +122,14 @@ runs:
         if [[ -f "${{ inputs.env_file }}" ]]; then
           env_file_arg="--env-file ${{ inputs.env_file }}"
         fi
-        
+
         config_path="${{ steps.check.outputs.path }}"
         if [[ "${config_path}" == "." ]]; then
           config_path="/github/workspace"
         else
           config_path="/github/workspace/${config_path#./}"
         fi
-        
+
         docker run --rm \
           --entrypoint "" \
           -v $(pwd):/github/workspace \

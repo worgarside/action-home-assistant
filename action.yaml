@@ -122,7 +122,7 @@ runs:
         if [[ -f "${{ inputs.env_file }}" ]]; then
           env_file_arg="--env-file ${{ inputs.env_file }}"
         fi
-        
+
         config_path="${{ steps.check.outputs.path }}"
         if [[ "${config_path}" == "." ]]; then
           config_path="/github/workspace"
